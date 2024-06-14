@@ -33,26 +33,6 @@ def load_datasets(hparams):
 
 
 
-def select_model(hparams, train_dataset):
-
-  if hparams.loss.lower() == 'byol':
-    model = BYOL(**hparams)
-  elif hparams.loss.lower() == 'simsiam':
-    model = SimSiam(**hparams)
-  elif hparams.loss.lower() == 'swav':
-    if not hparams.resume_training:
-      model = SwAV(gpus=1, nmb_crops=(2,0), num_samples=len(train_dataset),  **hparams)
-    else:
-      model = SwAV(**hparams)
-  elif hparams.loss.lower() == 'barlowtwins':
-    model = BarlowTwins(**hparams)
-  elif:
-    model = SimCLR(hparams)
-
-  else:
-    raise Exception(f'Unknown datatype {hparams.datatype}')
-  return model
-
 
 def pretrain(hparams, wandb_logger):
   """
@@ -80,7 +60,7 @@ def pretrain(hparams, wandb_logger):
   # Create logdir based on WandB run name
   logdir = create_logdir(hparams.datatype, hparams.resume_training, wandb_logger)
   
-  model = select_model(hparams, train_dataset)
+  model = SimCLR(hparams)
   
   callbacks = []
 
