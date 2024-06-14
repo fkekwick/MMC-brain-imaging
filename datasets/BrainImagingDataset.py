@@ -25,7 +25,7 @@ warnings.simplefilter('ignore')
 
 
 class BrainImgDataset():
-    def __init__(self,root_dir:str, modality_path:str , table_dir, transform: transforms.Compose,split = 'train') -> None:
+    def __init__(self,root_dir:str, modality_path:str , table_dir,split = 'train') -> None:
         self.root_dir = root_dir
         self.table_dir = table_dir
         self.all_folders, self.all_labels = self.load_sex_table()
@@ -56,8 +56,7 @@ class BrainImgDataset():
 
         self.imgs = self.load_images()
         #augmentations
-        self.augmentation = transform
-        self.augmentation_pipeline_default = transforms.Compose([
+        self.augmentation  = transforms.Compose([
             transforms.RandomApply([
                 transforms.RandomRotation(degrees=20),
                 transforms.RandomVerticalFlip(),
@@ -137,9 +136,7 @@ class BrainImgDataset():
             imgs.append(slice_tensor.type('torch.DoubleTensor'))
         
             if not slice_tensor.shape == torch.Size([182, 218]):
-                print(slice_tensor.shape)
-            # print(img_array_slice_cropped.squeeze(0).squeeze(0).shape)
-            
+                print(slice_tensor.shape)     
         return torch.stack(imgs)
 
     def __len__(self):

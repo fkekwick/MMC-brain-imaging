@@ -69,13 +69,10 @@ weight_decay_classifier: 1.e-4
 online_mlp: True
 
 # Imaging
-augmentation_rate: 0.95
-crop_scale_lower: 0.08
+modality_path:    '/home/fiona/biodata/brain_data/brain_data/'
+table_dir: '/home/fiona/biodata/tabular_data/' 
+root_dir:  'T1/T1_brain_to_MNI.nii.gz'
 
-# tabular
-corruption_rate: 0.3
-one_hot: True
-eval_one_hot: True
 
 encoder_num_layers: 2
 projector_num_layers: 1
@@ -113,15 +110,15 @@ weighted_sampler: False
 classifier_freq: 5
 unit_test: False
 
-transform:
-version:
-input_size:
-transform_train:
-transform_val:
-transform_test:
-dataset_length:
-resume_training:
-wandb_id:
+# transform:
+# version:
+# input_size:
+# transform_train:
+# transform_val:
+# transform_test:
+# dataset_length:
+# resume_training:
+# wandb_id:
 
 labels_train_short:
 labels_val_short:

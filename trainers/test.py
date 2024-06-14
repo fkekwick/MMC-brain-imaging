@@ -1,8 +1,7 @@
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
-from datasets.ImageDataset import ImageDataset
-from datasets.TabularDataset import TabularDataset
+from datasets.BrainImagingDataset import BrainImgDataset
 from models.Evaluator import Evaluator
 from utils.utils import grab_arg_from_checkpoint
 
@@ -15,17 +14,7 @@ def test(hparams, wandb_logger=None):
   hparams:      All hyperparameters
   """
   pl.seed_everything(hparams.seed)
-  
-  if hparams.datatype == 'imaging' or hparams.datatype == 'multimodal':
-    test_dataset = ImageDataset(hparams.data_test_eval_imaging, hparams.labels_test_eval_imaging, hparams.delete_segmentation, 0, grab_arg_from_checkpoint(hparams, 'img_size'), target=hparams.target, train=False, live_loading=hparams.live_loading)
-    
-    print(test_dataset.transform_val.__repr__())
-  elif hparams.datatype == 'tabular':
-    test_dataset = TabularDataset(hparams.data_test_eval_tabular, hparams.labels_test_eval_tabular, hparams.eval_one_hot, hparams.field_lengths_tabular)
-    hparams.input_size = test_dataset.get_input_size()
-  else:
-    raise Exception('argument dataset must be set to imaging, tabular or multimodal')
-  
+  test_dataset = test_dataset = BrainImgDataset(table_dir=hparams.table_dir,root_dir=hparams.root_dir, modality_path=hparams.modality_path, split='test')
   drop = ((len(test_dataset)%hparams.batch_size)==1)
 
   test_loader = DataLoader(

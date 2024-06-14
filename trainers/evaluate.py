@@ -6,36 +6,23 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
 from torch.utils.data.sampler import WeightedRandomSampler
 
-from datasets.ImageDataset import ImageDataset
-from datasets.TabularDataset import TabularDataset
-from datasets.ImagingAndTabularDataset import ImagingAndTabularDataset
+from datasets.BrainImagingDataset import BrainImgDataset
 from models.Evaluator import Evaluator
 from models.Evaluator_regression import Evaluator_Regression
 from utils.utils import grab_arg_from_checkpoint, grab_hard_eval_image_augmentations, grab_wids, create_logdir
 
 def load_datasets(hparams):
-  if hparams.datatype == 'imaging' or hparams.datatype == 'multimodal':
-    train_dataset = ImageDataset(hparams.data_train_eval_imaging, hparams.labels_train_eval_imaging, hparams.delete_segmentation, hparams.eval_train_augment_rate, grab_arg_from_checkpoint(hparams, 'img_size'), target=hparams.target, train=True, live_loading=hparams.live_loading, task=hparams.task)
-    val_dataset = ImageDataset(hparams.data_val_eval_imaging, hparams.labels_val_eval_imaging, hparams.delete_segmentation, hparams.eval_train_augment_rate, grab_arg_from_checkpoint(hparams, 'img_size'), target=hparams.target, train=False, live_loading=hparams.live_loading, task=hparams.task)
-  elif hparams.datatype == 'tabular':
-    train_dataset = TabularDataset(hparams.data_train_eval_tabular, hparams.labels_train_eval_tabular, hparams.eval_one_hot, hparams.field_lengths_tabular)
-    val_dataset = TabularDataset(hparams.data_val_eval_tabular, hparams.labels_val_eval_tabular, hparams.eval_one_hot, hparams.field_lengths_tabular)
-    hparams.input_size = train_dataset.get_input_size()
-  elif hparams.datatype == 'imaging_and_tabular':
-    train_dataset = ImagingAndTabularDataset(
-      hparams.data_train_eval_imaging, hparams.delete_segmentation, hparams.augmentation_rate, 
-      hparams.data_train_eval_tabular, hparams.field_lengths_tabular, hparams.eval_one_hot,
-      hparams.labels_train_eval_imaging, hparams.img_size, hparams.live_loading, train=True, target=hparams.target
-    )
-    val_dataset = ImagingAndTabularDataset(
-      hparams.data_val_eval_imaging, hparams.delete_segmentation, hparams.augmentation_rate, 
-      hparams.data_val_eval_tabular, hparams.field_lengths_tabular, hparams.eval_one_hot,
-      hparams.labels_val_eval_imaging, hparams.img_size, hparams.live_loading, train=False, target=hparams.target
-    )
-    hparams.input_size = train_dataset.get_input_size()
-  else:
-    raise Exception('argument dataset must be set to imaging, tabular, multimodal or imaging_and_tabular')
-  return train_dataset, val_dataset
+  if hparams.datatype == 'imaging':
+    train_dataset = BrainImgDataset(
+       table_dir=hparams.table_dir,
+      root_dir=hparams.root_dir, modality_path=hparams.modality_path,
+      split='train')
+
+    val_dataset = BrainImgDataset(
+      table_dir=hparams.table_dir,
+      root_dir=hparams.root_dir, modality_path=hparams.modality_path, 
+      split='val')
+    return train_dataset, val_dataset
 
 
 def evaluate(hparams, wandb_logger):
@@ -91,21 +78,10 @@ def evaluate(hparams, wandb_logger):
 
   if hparams.test_and_eval:
     if hparams.datatype == 'imaging' or hparams.datatype == 'multimodal':
-      test_dataset = ImageDataset(hparams.data_test_eval_imaging, hparams.labels_test_eval_imaging, hparams.delete_segmentation, 0, grab_arg_from_checkpoint(hparams, 'img_size'), target=hparams.target, train=False, live_loading=hparams.live_loading, task=hparams.task)
-      
-      hparams.transform_test = test_dataset.transform_val.__repr__()
-    elif hparams.datatype == 'tabular':
-      test_dataset = TabularDataset(hparams.data_test_eval_tabular, hparams.labels_test_eval_tabular, hparams.eval_one_hot, hparams.field_lengths_tabular)
-      hparams.input_size = test_dataset.get_input_size()
-    elif hparams.datatype == 'imaging_and_tabular':
-      test_dataset = ImagingAndTabularDataset(
-        hparams.data_test_eval_imaging, hparams.delete_segmentation, 0, 
-        hparams.data_test_eval_tabular, hparams.field_lengths_tabular, hparams.eval_one_hot,
-        hparams.labels_test_eval_imaging, hparams.img_size, hparams.live_loading, train=False, target=hparams.target)
-      hparams.input_size = test_dataset.get_input_size()
-    else:
-      raise Exception('argument dataset must be set to imaging, tabular or multimodal')
-    
+      test_dataset = BrainImgDataset(
+      table_dir=hparams.table_dir,
+      root_dir=hparams.root_dir, modality_path=hparams.modality_path, 
+      split='test')
     drop = ((len(test_dataset)%hparams.batch_size)==1)
 
     test_loader = DataLoader(

@@ -15,18 +15,13 @@ def load_datasets(hparams):
 
   if hparams.datatype == 'imaging':
 
-    ####################
-    transform = grab_image_augmentations(hparams.img_size, hparams.target, hparams.crop_scale_lower)
-    hparams.transform = transform.__repr__()
-
-
     train_dataset = BrainImgDataset(
-      transform=transform, table_dir=hparams.table_dir,
+       table_dir=hparams.table_dir,
       root_dir=hparams.root_dir, modality_path=hparams.modality_path,
       split='train')
 
     val_dataset = BrainImgDataset(
-      transform=transform, table_dir=hparams.table_dir,
+      table_dir=hparams.table_dir,
       root_dir=hparams.root_dir, modality_path=hparams.modality_path, 
       split='val')
     return train_dataset, val_dataset
