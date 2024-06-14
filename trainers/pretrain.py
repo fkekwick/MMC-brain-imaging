@@ -1,6 +1,3 @@
-import os 
-import sys
-
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
@@ -9,72 +6,49 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from utils.utils import grab_image_augmentations, grab_wids, create_logdir
 from utils.ssl_online_custom import SSLOnlineEvaluator
 
-from datasets.ContrastiveImagingAndTabularDataset import ContrastiveImagingAndTabularDataset
-from datasets.ContrastiveImageDataset import ContrastiveImageDataset
-from datasets.ContrastiveTabularDataset import ContrastiveTabularDataset
-
-from models.MultimodalSimCLR import MultimodalSimCLR
+from datasets.BrainImagingDataset import BrainImgDataset
 from models.SimCLR import SimCLR
-from models.SwAV_Bolt import SwAV
-from models.BYOL_Bolt import BYOL
-from models.SimSiam_Bolt import SimSiam
-from models.BarlowTwins import BarlowTwins
-from models.SCARF import SCARF
 
 
 
 def load_datasets(hparams):
-  if hparams.datatype == 'multimodal':
-    transform = grab_image_augmentations(hparams.img_size, hparams.target)
-    hparams.transform = transform.__repr__()
-    train_dataset = ContrastiveImagingAndTabularDataset(
-      hparams.data_train_imaging, hparams.delete_segmentation, transform, hparams.augmentation_rate, 
-      hparams.data_train_tabular, hparams.corruption_rate, hparams.field_lengths_tabular, hparams.one_hot,
-      hparams.labels_train, hparams.img_size, hparams.live_loading)
-    val_dataset = ContrastiveImagingAndTabularDataset(
-      hparams.data_val_imaging, hparams.delete_segmentation, transform, hparams.augmentation_rate, 
-      hparams.data_val_tabular, hparams.corruption_rate, hparams.field_lengths_tabular, hparams.one_hot,
-      hparams.labels_val, hparams.img_size, hparams.live_loading)
-    hparams.input_size = train_dataset.get_input_size()
-  elif hparams.datatype == 'imaging':
+
+  if hparams.datatype == 'imaging':
+
+    ####################
     transform = grab_image_augmentations(hparams.img_size, hparams.target, hparams.crop_scale_lower)
     hparams.transform = transform.__repr__()
-    train_dataset = ContrastiveImageDataset(
-      data=hparams.data_train_imaging, labels=hparams.labels_train, 
-      transform=transform, delete_segmentation=hparams.delete_segmentation, 
-      augmentation_rate=hparams.augmentation_rate, img_size=hparams.img_size, live_loading=hparams.live_loading)
-    val_dataset = ContrastiveImageDataset(
-      data=hparams.data_val_imaging, labels=hparams.labels_val, 
-      transform=transform, delete_segmentation=hparams.delete_segmentation, 
-      augmentation_rate=hparams.augmentation_rate, img_size=hparams.img_size, live_loading=hparams.live_loading)
-  elif hparams.datatype == 'tabular':
-    train_dataset = ContrastiveTabularDataset(hparams.data_train_tabular, hparams.labels_train, hparams.corruption_rate, hparams.field_lengths_tabular, hparams.one_hot)
-    val_dataset = ContrastiveTabularDataset(hparams.data_val_tabular, hparams.labels_val, hparams.corruption_rate, hparams.field_lengths_tabular, hparams.one_hot)
-    hparams.input_size = train_dataset.get_input_size()
-  else:
-    raise Exception(f'Unknown datatype {hparams.datatype}')
-  return train_dataset, val_dataset
+
+
+    train_dataset = BrainImgDataset(
+      transform=transform, table_dir=hparams.table_dir,
+      root_dir=hparams.root_dir, modality_path=hparams.modality_path,
+      split='train')
+
+    val_dataset = BrainImgDataset(
+      transform=transform, table_dir=hparams.table_dir,
+      root_dir=hparams.root_dir, modality_path=hparams.modality_path, 
+      split='val')
+    return train_dataset, val_dataset
+
 
 
 def select_model(hparams, train_dataset):
-  if hparams.datatype == 'multimodal':
-    model = MultimodalSimCLR(hparams)
-  elif hparams.datatype == 'imaging':
-    if hparams.loss.lower() == 'byol':
-      model = BYOL(**hparams)
-    elif hparams.loss.lower() == 'simsiam':
-      model = SimSiam(**hparams)
-    elif hparams.loss.lower() == 'swav':
-      if not hparams.resume_training:
-        model = SwAV(gpus=1, nmb_crops=(2,0), num_samples=len(train_dataset),  **hparams)
-      else:
-        model = SwAV(**hparams)
-    elif hparams.loss.lower() == 'barlowtwins':
-      model = BarlowTwins(**hparams)
+
+  if hparams.loss.lower() == 'byol':
+    model = BYOL(**hparams)
+  elif hparams.loss.lower() == 'simsiam':
+    model = SimSiam(**hparams)
+  elif hparams.loss.lower() == 'swav':
+    if not hparams.resume_training:
+      model = SwAV(gpus=1, nmb_crops=(2,0), num_samples=len(train_dataset),  **hparams)
     else:
-      model = SimCLR(hparams)
-  elif hparams.datatype == 'tabular':
-    model = SCARF(hparams)
+      model = SwAV(**hparams)
+  elif hparams.loss.lower() == 'barlowtwins':
+    model = BarlowTwins(**hparams)
+  elif:
+    model = SimCLR(hparams)
+
   else:
     raise Exception(f'Unknown datatype {hparams.datatype}')
   return model
